@@ -1,0 +1,336 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --fileToolsBarHeight: 35px;
+  --ggs: 1;
+  --iconContainerMargin: 5px;
+  --nav-item-color-active: #888888;
+  --mainBackgroundColor: #262626;
+  --tabsInBarHeight: 40px;
+  --resizer-size: 20px;
+  --gear-size: 1em;
+  --boardSettings-height: 80%;
+  --boardSettings-width: 400px;
+
+  --backgroundColorDark1: #262626;
+  --backgroundColorDark2: #2c2c2c;
+  --backgroundColorDark3: #383838;
+  --backgroundColorDark4: #363636;
+  --backgroundColorDark5: ;
+
+  --selectColorDark1: #888888;
+  --selectColorDark2: #363636;
+  --selectColorDark3: #626262;
+
+  --accentColorDark1: #9f881b;
+
+  --boarderColorDark1: #9f881b;
+
+  --contentTitleHeight: 60px;
+
+  --baseColor: #c9c9c9;
+
+  --cocntentHeaderContainerHeight: 50px;
+
+  --proseMirrorMenubarHeight: 23px;
+}
+
+.ProseMirror {
+  position: relative;
+  outline: none;
+  min-height: calc(100% - var(--proseMirrorMenubarHeight) - 21px);
+}
+
+.ProseMirror * a {
+  color: var(--accentColorDark1);
+  cursor: pointer;
+}
+
+.ProseMirror::selection ** {
+  color: red;
+  background-color: yellow;
+}
+
+.ProseMirror[contenteditable="true"] {
+  caret-color: var(--baseColor);
+}
+
+.ProseMirror {
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  white-space: break-spaces;
+  -webkit-font-variant-ligatures: none;
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0; /* the above doesn't seem to work in Edge */
+}
+
+.ProseMirror pre {
+  white-space: pre-wrap;
+}
+
+.ProseMirror li {
+  position: relative;
+}
+
+.ProseMirror-hideselection *::selection {
+  background: transparent;
+}
+.ProseMirror-hideselection *::-moz-selection {
+  background: transparent;
+}
+.ProseMirror-hideselection {
+  caret-color: transparent;
+}
+
+.ProseMirror-selectednode {
+  outline: 2px solid #8cf;
+}
+
+/* Make sure li selections wrap around markers */
+
+li.ProseMirror-selectednode {
+  outline: none;
+}
+
+li.ProseMirror-selectednode:after {
+  content: "";
+  position: absolute;
+  left: -32px;
+  right: -2px;
+  top: -2px;
+  bottom: -2px;
+  border: 2px solid #8cf;
+  pointer-events: none;
+}
+
+/* Protect against generic img rules */
+
+img.ProseMirror-separator {
+  display: inline !important;
+  border: none !important;
+  margin: 0 !important;
+}
+
+.ProseMirror-textblock-dropdown {
+  min-width: 3em;
+}
+
+.ProseMirror-menu {
+  margin: 0 -4px;
+  line-height: 1;
+}
+
+.ProseMirror-tooltip .ProseMirror-menu {
+  width: -webkit-fit-content;
+  width: fit-content;
+  white-space: pre;
+}
+
+.ProseMirror-menuitem {
+  margin-right: 3px;
+  display: inline-block;
+}
+
+.ProseMirror-menuseparator {
+  border-right: 1px solid #ddd;
+  margin-right: 3px;
+}
+
+.ProseMirror-menu-dropdown,
+.ProseMirror-menu-dropdown-menu {
+  transition: all 0.3s ease;
+  font-size: 90%;
+  white-space: nowrap;
+}
+
+.ProseMirror-menu-dropdown {
+  vertical-align: 1px;
+  cursor: pointer;
+  position: relative;
+  padding-right: 15px;
+}
+
+.ProseMirror-menu-dropdown-wrap {
+  padding: 1px 0 1px 4px;
+  display: inline-block;
+  position: relative;
+}
+
+.ProseMirror-menu-dropdown:after {
+  content: "";
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid currentColor;
+  opacity: 0.6;
+  position: absolute;
+  right: 4px;
+  top: calc(50% - 2px);
+}
+
+.ProseMirror-menu-dropdown-menu,
+.ProseMirror-menu-submenu {
+  position: absolute;
+  background: linear-gradient(
+    45deg,
+    rgba(10, 20, 28, 0.2) 0%,
+    rgba(10, 20, 28, 0.7) 100%
+  );
+  backdrop-filter: blur(5px);
+  color: #666;
+  border: 1px solid #aaa;
+  padding: 2px;
+}
+
+.ProseMirror-menu-dropdown-menu {
+  z-index: 15;
+  min-width: 6em;
+}
+
+.ProseMirror-menu-dropdown-item {
+  cursor: pointer;
+  padding: 2px 8px 2px 4px;
+}
+
+.ProseMirror-menu-dropdown-item:hover {
+  background: #f2f2f2;
+}
+
+.ProseMirror-menu-submenu-wrap {
+  position: relative;
+  margin-right: -4px;
+}
+
+.ProseMirror-menu-submenu-label:after {
+  content: "";
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 4px solid currentColor;
+  opacity: 0.6;
+  position: absolute;
+  right: 4px;
+  top: calc(50% - 4px);
+}
+
+.ProseMirror-menu-submenu {
+  display: none;
+  min-width: 4em;
+  left: 100%;
+  top: -3px;
+  background-color: var(--backgroundColorDark3);
+}
+
+.ProseMirror-menu-active {
+  background: #eee;
+  border-radius: 4px;
+}
+
+.ProseMirror-menu-disabled {
+  /* opacity: .3; */
+  border-bottom: 1px solid;
+}
+
+.ProseMirror-menu-submenu-wrap:hover .ProseMirror-menu-submenu,
+.ProseMirror-menu-submenu-wrap-active .ProseMirror-menu-submenu {
+  display: block;
+}
+
+.ProseMirror-menubar {
+  /* border-top-left-radius: inherit; */
+  /* border-top-right-radius: inherit; */
+  /* position: relative; */
+  /* min-height: 1em; */
+  color: #666;
+  /* padding: 1px 6px; */
+  top: 0;
+  position: sticky;
+  /* left: 0; */
+  /* right: 0; */
+  /* border-bottom: 1px solid silver; */
+  /* background: white; */
+  z-index: 10;
+  height: var(--proseMirrorMenubarHeight);
+  -moz-box-sizing: border-box;
+  /* box-sizing: border-box; */
+  display: flex;
+  /* overflow: hidden; */
+  align-items: center;
+  background: var(--backgroundColorDark1);
+  justify-content: center;
+}
+
+.ProseMirror-icon {
+  display: inline-block;
+  line-height: 0.8;
+  vertical-align: -2px; /* Compensate for padding */
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+.ProseMirror-menu-disabled.ProseMirror-icon {
+  cursor: default;
+}
+
+.ProseMirror-icon svg {
+  fill: currentColor;
+  height: 1em;
+}
+
+.ProseMirror-icon span {
+  vertical-align: text-top;
+}
+
+.ProseMirror-menubar-wrapper {
+  overflow: auto;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+/*
+This is a modal component actually, so you need it to be absolute
+*/
+.editor-link-prompt {
+  position: absolute;
+  background-color: var(--backgroundColorDark1);
+
+  /*
+  I am forced to use z-index here, or i'll be searching for cascading
+  for an eternity
+  */
+  z-index: 102;
+
+  padding: 2%;
+  border-color: var(--boarderColorDark1);
+  border-width: thin;
+  border-style: solid;
+}
+
+/*
+There is a header of a prompt
+*/
+.editor-link-prompt form > h5 {
+  text-align: center;
+}
+
+/*
+forms input boxes color definition
+*/
+
+.editor-link-prompt form > * > input {
+  margin: 1%;
+  caret-color: var(--baseColor);
+  color: whitesmoke;
+}
+/*
+form buttons styling (awful)
+*/
+.editor-link-prompt button {
+  background-color: var(--backgroundColorDark4);
+  color: var(--baseColor);
+}
+
+.tableWrapper {
+  max-height: 500px;
+  overflow: auto;
+}
