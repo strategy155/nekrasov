@@ -1,37 +1,89 @@
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import typescript from '@rollup/plugin-typescript';
+import css from 'rollup-plugin-css-only';
+
+const external = [
+	'dompurify',
+	'markdown-it',
+	'prosemirror-commands',
+	'prosemirror-dropcursor',
+	'prosemirror-gapcursor',
+	'prosemirror-history',
+	'prosemirror-inputrules',
+	'prosemirror-keymap',
+	'prosemirror-menu',
+	'prosemirror-model',
+	'prosemirror-schema-list',
+	'prosemirror-state',
+	'prosemirror-tables',
+	'prosemirror-transform',
+	'prosemirror-view'
+];
+
 export default [
-	// browser-friendly UMD build
+	// UMD build for browsers (includes all dependencies)
 	{
-		input: 'src/editor.ts',
+		input: 'src/index.ts',
 		output: {
-			name: 'nekrasov',
-			file: process.env.browser,
-			format: 'umd'
+			name: 'Nekrasov',
+			file: 'dist/nekrasov.umd.js',
+			format: 'umd',
+			globals: {
+				'dompurify': 'DOMPurify',
+				'markdown-it': 'markdownit',
+				'prosemirror-commands': 'prosemirrorCommands',
+				'prosemirror-dropcursor': 'prosemirrorDropcursor',
+				'prosemirror-gapcursor': 'prosemirrorGapcursor',
+				'prosemirror-history': 'prosemirrorHistory',
+				'prosemirror-inputrules': 'prosemirrorInputrules',
+				'prosemirror-keymap': 'prosemirrorKeymap',
+				'prosemirror-menu': 'prosemirrorMenu',
+				'prosemirror-model': 'prosemirrorModel',
+				'prosemirror-schema-list': 'prosemirrorSchemaList',
+				'prosemirror-state': 'prosemirrorState',
+				'prosemirror-tables': 'prosemirrorTables',
+				'prosemirror-transform': 'prosemirrorTransform',
+				'prosemirror-view': 'prosemirrorView'
+			},
+			sourcemap: true
 		},
 		plugins: [
-			resolve(),   // so Rollup can find `ms`
-			commonjs(),  // so Rollup can convert `ms` to an ES module
-			typescript() // so Rollup can convert TypeScript to JavaScript
+			css({ output: 'style.css' }),
+			resolve({ browser: true }),
+			commonjs(),
+			typescript({
+				tsconfig: './tsconfig.json',
+				declaration: true,
+				declarationDir: 'dist',
+				sourceMap: true
+			})
 		]
 	},
 
-	// CommonJS (for Node) and ES module (for bundlers) build.
-	// (We could have three entries in the configuration array
-	// instead of two, but it's quicker to generate multiple
-	// builds from a single configuration where possible, using
-	// an array for the `output` option, where we can specify 
-	// `file` and `format` for each target)
+	// ESM and CJS builds for bundlers (external dependencies)
 	{
-		input: 'src/editor.ts',
-		external: ['ms'],
-		plugins: [
-			typescript() // so Rollup can convert TypeScript to JavaScript
-		],
+		input: 'src/index.ts',
+		external,
 		output: [
-			{ file: process.env.main, format: 'cjs' },
-			{ file: process.env.module, format: 'es' }
+			{
+				file: 'dist/nekrasov.cjs.js',
+				format: 'cjs',
+				sourcemap: true
+			},
+			{
+				file: 'dist/nekrasov.esm.js',
+				format: 'es',
+				sourcemap: true
+			}
+		],
+		plugins: [
+			css({ output: 'style.css' }),
+			typescript({
+				tsconfig: './tsconfig.json',
+				declaration: false,
+				sourceMap: true
+			})
 		]
 	}
 ];

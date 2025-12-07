@@ -1,11 +1,291 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>EcmaScript SIMD numeric type tests</title>
-  <link rel="stylesheet" href="external/qunit.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nekrasov Editor - Demo</title>
+  <link rel="stylesheet" href="../dist/style.css">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+
+    #editor-container {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      min-height: 400px;
+      padding: 0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    #editor-container .ProseMirror {
+      padding: 20px;
+      min-height: 350px;
+      outline: none;
+    }
+
+    #editor-container .ProseMirror:focus {
+      outline: none;
+    }
+
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      background: #4a90d9;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #357abd;
+    }
+
+    button.secondary {
+      background: #6c757d;
+    }
+
+    button.secondary:hover {
+      background: #545b62;
+    }
+
+    #output {
+      margin-top: 20px;
+      background: #282c34;
+      color: #abb2bf;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 300px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    #output.visible {
+      display: block;
+    }
+
+    /* ProseMirror menu styles */
+    .ProseMirror-menubar {
+      background: #fafafa;
+      border-bottom: 1px solid #ddd;
+      border-radius: 8px 8px 0 0;
+      padding: 5px 10px;
+    }
+
+    .ProseMirror-menubar-wrapper {
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    /* Prompt dialog styles */
+    .nekrasov-prompt {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      min-width: 300px;
+    }
+
+    .nekrasov-prompt h5 {
+      margin: 0 0 15px 0;
+      font-size: 16px;
+      color: #333;
+    }
+
+    .nekrasov-prompt input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    .nekrasov-prompt-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 15px;
+    }
+
+    .nekrasov-prompt-submit,
+    .nekrasov-prompt-cancel {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .nekrasov-prompt-submit {
+      background: #4a90d9;
+      color: white;
+    }
+
+    .nekrasov-prompt-cancel {
+      background: #e0e0e0;
+      color: #333;
+    }
+
+    /* Link preview styles */
+    .link-preview-container {
+      display: inline-block;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 8px;
+      margin: 4px 0;
+    }
+
+    .link-preview-iframe {
+      width: 100%;
+      height: 150px;
+      border: none;
+    }
+
+    .file-preview {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #666;
+    }
+  </style>
 </head>
 <body>
-  <script src=""></script>
+  <h1>Nekrasov Editor</h1>
+  <p class="subtitle">A modern, pluggable ProseMirror-based text editor with Markdown support</p>
+
+  <div id="editor-container"></div>
+
+  <div class="controls">
+    <button id="get-markdown">Get Markdown</button>
+    <button id="set-content" class="secondary">Load Sample Content</button>
+    <button id="clear-content" class="secondary">Clear</button>
+    <button id="toggle-output" class="secondary">Toggle Output</button>
+  </div>
+
+  <pre id="output"></pre>
+
+  <script type="module">
+    // Import the built editor
+    import { NekrasovEditor, noopTabOpener } from '../dist/nekrasov.esm.js';
+
+    // Sample markdown content
+    const sampleContent = `# Welcome to Nekrasov Editor
+
+This is a **modern** text editor built on [ProseMirror](https://prosemirror.net/).
+
+## Features
+
+- **Rich text editing** with markdown support
+- *Italic*, **bold**, and \`code\` formatting
+- Lists (ordered and unordered)
+- Blockquotes
+- Code blocks
+- Tables
+- Links
+
+## Code Example
+
+\`\`\`javascript
+const editor = new NekrasovEditor({
+  target: document.getElementById('editor'),
+  content: '# Hello World'
+});
+\`\`\`
+
+## Blockquote
+
+> This is a blockquote. It can contain multiple paragraphs
+> and other formatting like **bold** or *italic* text.
+
+## Table Example
+
+| Feature | Status |
+|---------|--------|
+| Markdown parsing | Done |
+| Rich text editing | Done |
+| Tables | Done |
+| Links | Done |
+
+Try editing this content!
+`;
+
+    // Initialize the editor
+    const container = document.getElementById('editor-container');
+    const editor = new NekrasovEditor({
+      target: container,
+      content: sampleContent,
+      tabOpener: noopTabOpener,
+      menuBar: true,
+      floatingMenu: true
+    });
+
+    // Focus the editor
+    editor.focus();
+
+    // Get Markdown button
+    document.getElementById('get-markdown').addEventListener('click', () => {
+      const markdown = editor.getMarkdown();
+      const output = document.getElementById('output');
+      output.textContent = markdown;
+      output.classList.add('visible');
+    });
+
+    // Load sample content button
+    document.getElementById('set-content').addEventListener('click', () => {
+      editor.setContent(sampleContent);
+    });
+
+    // Clear content button
+    document.getElementById('clear-content').addEventListener('click', () => {
+      editor.setContent('');
+    });
+
+    // Toggle output button
+    document.getElementById('toggle-output').addEventListener('click', () => {
+      const output = document.getElementById('output');
+      output.classList.toggle('visible');
+    });
+
+    // Log to console for debugging
+    console.log('Nekrasov Editor initialized:', editor);
+  </script>
 </body>
 </html>

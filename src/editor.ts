@@ -2,7 +2,7 @@ import { DirectEditorProps, EditorView } from "prosemirror-view";
 import { EditorState, EditorStateConfig } from "prosemirror-state";
 import { ruzettPlugins } from "./plugins";
 import { ruzettSchema } from "./schema";
-import { DOMSerializer, Node as ProsemirrorNode } from "prosemirror-model";
+import { DOMSerializer, Node as ProsemirrorNode, Schema } from "prosemirror-model";
 import { ruzettTokens, MarkdownParser } from "./markdown/parser";
 import {
   ruzettMarksSerializing,
@@ -11,88 +11,126 @@ import {
 } from "./markdown/serializer";
 import { fixTables } from "prosemirror-tables";
 import MarkdownIt from "markdown-it";
+import { TabOpener, noopTabOpener } from "./types";
 import "./editor.css";
-import { tabBar } from "../renderer";
 
 const MARKDOWN_PARSER_PRESET = "commonmark";
 const IS_HTML_ENABLED = true;
-const MARKDOWN_PARSER_DEFAULT_OPTIONS: MarkdownIt["options"] = {
+const MARKDOWN_PARSER_DEFAULT_OPTIONS = {
   html: IS_HTML_ENABLED,
 };
 
 const ADD_TO_HISTORY_TRANSACTION_META = "addToHistory";
 
 /**
- * This is a Prosemirror based ruzett app editor. It has many different features, but I'll list only basics
- * Basic markdown serializing and parsing, and some html support.
+ * Configuration options for creating a NekrasovEditor instance.
  */
-class RuzettEditor {
-  /** This property is containing currentPM editor view of an editor*/
+export interface EditorOptions {
+  /** The DOM element to attach the editor to */
+  target: HTMLElement;
+  /** Initial markdown content */
+  content?: string;
+  /** Tab opener implementation for handling link clicks */
+  tabOpener?: TabOpener;
+  /** Whether to show the menu bar (default: true) */
+  menuBar?: boolean;
+  /** Whether the menu bar should float (default: true) */
+  floatingMenu?: boolean;
+  /** Custom schema (default: ruzettSchema) */
+  schema?: Schema;
+}
+
+/**
+ * NekrasovEditor - A modern ProseMirror-based text editor with Markdown support.
+ *
+ * Features:
+ * - Markdown parsing and serialization
+ * - Rich text editing with ProseMirror
+ * - Table support
+ * - Link handling (both web URLs and file paths)
+ * - Extensible plugin system
+ */
+class NekrasovEditor {
+  /** The ProseMirror EditorView instance */
   view: EditorView;
-  /** This property contains parser of textual markdown to PM document */
+  /** Markdown parser for converting text to ProseMirror documents */
   mdParser: MarkdownParser;
-  /** This property is a serializer which takes PM Document and creates a textual representation with mixed
-   * HTML and MD
-   */
+  /** Markdown serializer for converting ProseMirror documents to text */
   mdSerializer: MarkdownSerializer;
-
-  /** This is a DOM serializer, which is used by the markdown serializer to create an html blocks */
+  /** DOM serializer for HTML output */
   DOMSerializer: DOMSerializer;
-
-  /** Providing a binding for the tabbar of an app */
-  tabOpener: tabBar;
+  /** The schema used by this editor */
+  schema: Schema;
+  /** Tab opener for handling link clicks */
+  tabOpener: TabOpener;
 
   /**
+   * Creates a new NekrasovEditor instance.
    *
-   * @param target  it is an html element, to which the editor will be connected
-   * @param content this is a string representation of a content, if it is existent
+   * @param options - Configuration options for the editor
+   *
+   * @example
+   * ```typescript
+   * const editor = new NekrasovEditor({
+   *   target: document.getElementById('editor'),
+   *   content: '# Hello World\n\nThis is some **bold** text.',
+   * });
+   * ```
    */
-  constructor(
-    public readonly target: HTMLElement,
-    content: string,
-    tabOpener: tabBar
-  ) {
-    // creating a serializer from the schema
-    // #TODO: probably should be revised
-    this.DOMSerializer = DOMSerializer.fromSchema(ruzettSchema);
+  constructor(options: EditorOptions) {
+    const {
+      target,
+      content = "",
+      tabOpener = noopTabOpener,
+      menuBar = true,
+      floatingMenu = true,
+      schema = ruzettSchema,
+    } = options;
 
-    // getting a tab opener for easifying linkage of the pages with editors in the internal linsk
+    this.schema = schema;
     this.tabOpener = tabOpener;
 
-    // initializing markdown parser and markdown serializer based on the settings of an editor
+    // Create DOM serializer from schema
+    this.DOMSerializer = DOMSerializer.fromSchema(this.schema);
+
+    // Initialize markdown parser
     const markdownITParser = MarkdownIt(
       MARKDOWN_PARSER_PRESET,
       MARKDOWN_PARSER_DEFAULT_OPTIONS
     );
     this.mdParser = new MarkdownParser(
-      ruzettSchema,
+      this.schema,
       markdownITParser,
       ruzettTokens
     );
+
+    // Initialize markdown serializer
     this.mdSerializer = new MarkdownSerializer(
       ruzettNodesSerializing,
       ruzettMarksSerializing,
       this.DOMSerializer
     );
 
-    // creating initial document by parsing its content, ensuring it contains node
+    // Parse initial content
     const initialDoc = this.mdParser.parse(content) as ProsemirrorNode;
 
-    // initializing plugins for the editor
+    // Build plugins
     const pluginOptions = {
-      schema: ruzettSchema,
+      schema: this.schema,
       tabOpener: this.tabOpener,
+      menuBar,
+      floatingMenu,
     };
     const initialPlugins = ruzettPlugins(pluginOptions);
 
-    // creating an editor state
+    // Create editor state
     const editorConfig: EditorStateConfig = {
       doc: initialDoc,
       plugins: initialPlugins,
     };
     let state = EditorState.create(editorConfig);
 
-    // creating a fix transaction for tables if needed (a heads up for the creator of the pm tables)
+    // Fix tables if needed
     const fixTransaction = fixTables(state);
     if (fixTransaction) {
       const fixTransactionNoHistory = fixTransaction.setMeta(
@@ -102,25 +140,57 @@ class RuzettEditor {
       state = state.apply(fixTransactionNoHistory);
     }
 
-    // finally creating the view of an editor by a configuration
+    // Create the editor view
     const editorViewProps: DirectEditorProps = {
       state: state,
     };
     this.view = new EditorView(target, editorViewProps);
   }
 
-  /** This method returns markdown representation of an editor right now right here */
-  get getMarkdown() {
+  /**
+   * Gets the current content as Markdown.
+   */
+  getMarkdown(): string {
     const currentDoc = this.view.state.doc;
     return this.mdSerializer.serialize(currentDoc);
   }
 
-  focus() {
+  /**
+   * Sets the editor content from Markdown.
+   *
+   * @param markdown - The markdown content to load
+   */
+  setContent(markdown: string): void {
+    const doc = this.mdParser.parse(markdown) as ProsemirrorNode;
+    const newState = EditorState.create({
+      doc,
+      plugins: this.view.state.plugins,
+    });
+    this.view.updateState(newState);
+  }
+
+  /**
+   * Focuses the editor.
+   */
+  focus(): void {
     this.view.focus();
   }
-  destroy() {
+
+  /**
+   * Destroys the editor and cleans up resources.
+   */
+  destroy(): void {
     this.view.destroy();
+  }
+
+  /**
+   * Gets the current ProseMirror state.
+   */
+  get state(): EditorState {
+    return this.view.state;
   }
 }
 
-export default RuzettEditor;
+// Keep backward compatibility with the old class name
+export { NekrasovEditor as RuzettEditor };
+export default NekrasovEditor;

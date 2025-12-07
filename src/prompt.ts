@@ -1,7 +1,7 @@
 import { Attrs } from "prosemirror-model";
-import { EditorView } from "prosemirror-view";
+import { getPlatformAPI } from "./types";
 
-const prefix = "editor-link-prompt";
+const prefix = "nekrasov-prompt";
 
 export interface PromptProps {
   title: string;
@@ -107,7 +107,6 @@ function getValues(
 }
 
 function reportInvalid(dom: HTMLElement, message: string) {
-  // FIXME this is awful and needs a lot more work
   const parent = dom.parentNode!;
   const msg = parent.appendChild(document.createElement("div"));
   msg.style.left = dom.offsetLeft + dom.offsetWidth + 2 + "px";
@@ -147,7 +146,6 @@ export abstract class Field {
 
   /// Read the field's value from its DOM node.
   read(dom: HTMLElement) {
-    //console.log(dom.value)
     return (dom as any).value;
   }
 
@@ -184,11 +182,12 @@ export class TextField extends Field {
 
 export class ExternalLinkField extends TextField {
   read(dom: HTMLInputElement) {
-    // as we receive a simple text field result in the prompt, we should
-    // append an `http` protocol to its start, because we would like only to link the external
-    // resources and not the internal ones
-    const fixedHref = "http://" + dom.value;
-    return fixedHref;
+    // Append http:// protocol if not present
+    let value = dom.value.trim();
+    if (value && !value.match(/^https?:\/\//)) {
+      value = "http://" + value;
+    }
+    return value;
   }
 }
 
@@ -214,11 +213,16 @@ export class CheckboxField extends Field {
 
 export class FilepathField extends Field {
   async chooseFilepath(ev: MouseEvent) {
-    const chosenFilepath = await window.electronAPI.getFilepath();
-    const fieldDOM = ev.target as HTMLInputElement;
-    fieldDOM.dataset.fileLink = "file://" + chosenFilepath;
-    //console.log(chosenFilepath);
-    return true;
+    try {
+      const platformAPI = getPlatformAPI();
+      const chosenFilepath = await platformAPI.getFilepath();
+      const fieldDOM = ev.target as HTMLInputElement;
+      fieldDOM.dataset.fileLink = "file://" + chosenFilepath;
+      return true;
+    } catch (e) {
+      console.error("Failed to choose filepath:", e);
+      return false;
+    }
   }
 
   render() {

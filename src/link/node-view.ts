@@ -1,69 +1,92 @@
 import { Node as ProsemirrorNode } from "prosemirror-model";
 import { NodeView, NodeViewConstructor } from "prosemirror-view";
-import { FILE_PROTOCOL_IDENTIFIER } from "../../constants";
-import { contentOpener } from "../../renderer.js";
+import { FILE_PROTOCOL_IDENTIFIER } from "../constants";
 
 /**
- * This function is constructing the nodeview for link nodes
- * @param node a prosemirror node
- * @returns
+ * Factory function for creating link node views.
+ *
+ * @param node - The ProseMirror node
+ * @returns A new LinkView instance
  */
 export const getLinkView: NodeViewConstructor = (node) => {
   return new LinkView(node);
 };
 
 /**
- * This nodeview is a linkview for rendered links,
- *  which are links which have a rendered preview inside the editor
+ * NodeView implementation for link nodes.
+ * Handles both regular links and "rendered" links that show a preview.
  */
 class LinkView implements NodeView {
   dom: HTMLElement;
   contentDOM?: HTMLAnchorElement;
 
   /**
-   * The constructor creates a view depending on the attribute rendering requirements
-   * @param node , a PM like node
+   * Creates a link node view.
+   *
+   * @param node - The ProseMirror link node
    */
   constructor(node: ProsemirrorNode) {
-    // If the node should be rendered, it should spawn a small box, in which there will be a
-    // content operatable
+    // For rendered links, show a preview box
     if (node.attrs.isRendered) {
-      // creating the box for content
       this.dom = document.createElement("div");
+      this.dom.className = "link-preview-container";
 
-      // creating the trace for link, with the href and the name, corresponding to the text content of node
+      // Create the link placeholder
       const linkPlaceholder = document.createElement("a");
       linkPlaceholder.setAttribute("href", node.attrs.href);
       linkPlaceholder.innerText = node.textContent;
+      linkPlaceholder.className = "link-preview-anchor";
 
-      // initializing the opener
-      const currentOpener = new contentOpener(this.dom);
+      // Create preview content
+      const previewElement = this.createPreview(node.attrs.href);
 
-      // making the href url to escape many different pitfalls
-      const urlifiedHref = new URL(node.attrs.href);
-
-      // setting the params accordingly to the href type: file vs web
-      let contentParams;
-      if (urlifiedHref.protocol === FILE_PROTOCOL_IDENTIFIER) {
-        contentParams = {
-          path: urlifiedHref.pathname,
-        };
-      } else {
-        contentParams = {
-          url: node.attrs.href,
-        };
-      }
-
-      // getting the coresponding content of a file
-      const contentElement = currentOpener.getContent(contentParams);
-
-      // forming the resulting dom
       this.dom.appendChild(linkPlaceholder);
-      this.dom.appendChild(contentElement);
+      this.dom.appendChild(previewElement);
     } else {
-      // creating the default link representation of a view
+      // Regular link rendering
       this.dom = this.contentDOM = document.createElement("a");
       this.dom.setAttribute("href", node.attrs.href);
+      if (node.attrs.title) {
+        this.dom.setAttribute("title", node.attrs.title);
+      }
     }
+  }
+
+  /**
+   * Creates a preview element for the given href.
+   *
+   * @param href - The link URL
+   * @returns An HTML element containing the preview
+   */
+  private createPreview(href: string): HTMLElement {
+    const previewContainer = document.createElement("div");
+    previewContainer.className = "link-preview-content";
+
+    try {
+      const url = new URL(href);
+
+      if (url.protocol === FILE_PROTOCOL_IDENTIFIER) {
+        // File preview placeholder
+        const filePath = decodeURI(url.pathname);
+        previewContainer.innerHTML = `
+          <div class="file-preview">
+            <span class="file-icon">📄</span>
+            <span class="file-path">${filePath}</span>
+          </div>
+        `;
+      } else {
+        // Web URL preview - show iframe for web content
+        const iframe = document.createElement("iframe");
+        iframe.src = href;
+        iframe.className = "link-preview-iframe";
+        iframe.setAttribute("sandbox", "allow-scripts allow-same-origin");
+        iframe.setAttribute("loading", "lazy");
+        previewContainer.appendChild(iframe);
+      }
+    } catch (e) {
+      previewContainer.textContent = `Invalid URL: ${href}`;
+    }
+
+    return previewContainer;
   }
 }
