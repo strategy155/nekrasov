@@ -5,17 +5,17 @@
  */
 
 // Main editor class
-export { default as NekrasovEditor, RuzettEditor, EditorOptions } from "./editor";
+export { default as NekrasovEditor, EditorOptions } from "./editor";
 
 // Schema
-export { ruzettSchema, RUZETT_SCHEMA_CONFIG, tableRelatedNodeTypes } from "./schema";
+export { nekrasovSchema, NEKRASOV_SCHEMA_CONFIG, tableRelatedNodeTypes } from "./schema";
 
 // Plugins
-export { ruzettPlugins, PluginOptions, buildMenuItems, buildKeymap, buildInputRules } from "./plugins";
+export { nekrasovPlugins, PluginOptions, buildMenuItems, buildKeymap, buildInputRules } from "./plugins";
 
 // Markdown parsing and serialization
-export { MarkdownParser, ruzettTokens } from "./markdown/parser";
-export { MarkdownSerializer, ruzettNodesSerializing, ruzettMarksSerializing } from "./markdown/serializer";
+export { MarkdownParser, nekrasovTokens } from "./markdown/parser";
+export { MarkdownSerializer, nekrasovNodesSerializing, nekrasovMarksSerializing } from "./markdown/serializer";
 
 // Types and interfaces for extensibility
 export {
@@ -43,11 +43,22 @@ export {
   SelectField,
 } from "./prompt";
 
-// Constants
+// Constants - grouped exports (preferred)
 export {
-  FILE_PROTOCOL_IDENTIFIER,
+  PROTOCOLS,
+  TABLE_COMMANDS,
+  EDITOR_DEFAULTS,
+  MARKDOWN_CONFIG,
+  TRANSACTION_META,
   LINK_CSS_SELECTOR,
   LINK_ATTRS,
+  LINK_OPENER_PLUGIN_KEY,
+  createAttributeSelector,
+} from "./constants";
+
+// Constants - legacy exports (for backwards compatibility)
+export {
+  FILE_PROTOCOL_IDENTIFIER,
   URL_OPENER_PLUGIN_KEY,
   CREATE_TABLE_CMD_NAME,
   ADD_COLUMN_BEFORE_CMD_NAME,
@@ -66,7 +77,7 @@ export {
 
 // Link-related exports
 export { LINK_SPEC } from "./link/node-spec";
-export { getClickLinkPlugin, getRuzettLinkPlugin } from "./link/click-plugin";
+export { getClickLinkPlugin, getNekrasovLinkPlugin } from "./link/click-plugin";
 export { getLinkView } from "./link/node-view";
 export { getExternalLinkItem, getFilepathLinkItem } from "./link/menu-item";
 

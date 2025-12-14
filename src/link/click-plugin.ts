@@ -1,117 +1,156 @@
+/**
+ * Nekrasov Editor - Link Click Plugin
+ *
+ * Handles link click events within the editor, opening links in new tabs
+ * when the user Ctrl+clicks or Cmd+clicks on them.
+ */
+
 import { Plugin, PluginSpec } from "prosemirror-state";
 import { EditorProps, EditorView, DOMEventMap } from "prosemirror-view";
 import { TabOpener, getPlatformAPI } from "../types";
-import {
-  FILE_PROTOCOL_IDENTIFIER,
-  URL_OPENER_PLUGIN_KEY as LINK_PLUGIN_KEY,
-} from "../constants";
+import { PROTOCOLS, LINK_OPENER_PLUGIN_KEY } from "../constants";
 import { getLinkView } from "./node-view";
 
 /**
- * Handles click events on anchor elements within the editor.
- * Opens links in new tabs when Ctrl+click is used.
- *
- * @param view - The ProseMirror editor view
- * @param event - The click event
+ * Checks if an element is an HTML anchor element.
  */
-function openNewTab(view: EditorView, event: DOMEventMap["click"]): boolean {
-  const eventTargetNode = event.target;
+function isAnchorElement(element: EventTarget | null): element is HTMLAnchorElement {
+  return element instanceof HTMLAnchorElement;
+}
 
-  // Check if the target is a link element
-  if (eventTargetNode instanceof HTMLAnchorElement) {
-    // Only handle Ctrl+click
-    if (event.ctrlKey || event.metaKey) {
-      console.log("Link clicked, href:", eventTargetNode.href);
+/**
+ * Checks if a click event should trigger link opening.
+ * Links open on Ctrl+click (Windows/Linux) or Cmd+click (Mac).
+ */
+function isLinkOpenTrigger(event: MouseEvent): boolean {
+  return event.ctrlKey || event.metaKey;
+}
 
-      // Get the click plugin from the current state to access the tabOpener
-      const currentState = view.state;
-      const openerPlugin = LINK_PLUGIN_KEY.get(currentState);
-      const tabOpener = openerPlugin?.spec.tabOpener as TabOpener | undefined;
+/**
+ * Handles the opening of file:// protocol links.
+ *
+ * @param href - The full URL of the file link
+ * @param tabOpener - The tab opener to use for opening the link
+ */
+async function handleFileProtocolLink(href: URL, tabOpener: TabOpener): Promise<void> {
+  const platformAPI = getPlatformAPI();
+  const userInfo = await platformAPI.getUserInfo();
 
-      if (!tabOpener) {
-        console.warn("No tab opener available");
-        return false;
-      }
+  let filePath = href.pathname;
 
-      try {
-        const urlifiedHREF = new URL(eventTargetNode.href);
-
-        // Handle file:// protocol links
-        if (urlifiedHREF.protocol === FILE_PROTOCOL_IDENTIFIER) {
-          let rawPath = urlifiedHREF.pathname;
-          const platformAPI = getPlatformAPI();
-
-          // Get user info to handle OS-specific path formatting
-          platformAPI.getUserInfo().then(
-            (userInfo) => {
-              // Fix slash-starting paths for Windows
-              if (rawPath[0] === "/" && userInfo.osType === "win32") {
-                rawPath = rawPath.substring(1);
-              }
-
-              const escapedRawPath = decodeURI(rawPath);
-              const parsedPath = platformAPI.parsePath(escapedRawPath);
-
-              tabOpener.addTabWithParams(
-                escapedRawPath,
-                null,
-                parsedPath.name + parsedPath.ext,
-                parsedPath.ext
-              );
-            },
-            (err: Error) => {
-              console.error("Failed to get user info:", err);
-            }
-          );
-        } else {
-          // Handle web URLs
-          tabOpener.addTabWithParams(null, urlifiedHREF.toString());
-        }
-      } catch (e) {
-        console.error("Failed to parse URL:", e);
-      }
-
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      return true;
-    }
+  // Windows paths from URLs start with / which needs to be removed
+  const isWindowsPath = filePath.startsWith("/") && userInfo.osType === "win32";
+  if (isWindowsPath) {
+    filePath = filePath.substring(1);
   }
 
-  return false;
+  const decodedPath = decodeURI(filePath);
+  const parsedPath = platformAPI.parsePath(decodedPath);
+
+  tabOpener.addTabWithParams(
+    decodedPath,
+    null,
+    parsedPath.name + parsedPath.ext,
+    parsedPath.ext
+  );
+}
+
+/**
+ * Handles the opening of web protocol links (http/https).
+ *
+ * @param href - The full URL of the web link
+ * @param tabOpener - The tab opener to use for opening the link
+ */
+function handleWebProtocolLink(href: URL, tabOpener: TabOpener): void {
+  tabOpener.addTabWithParams(null, href.toString());
+}
+
+/**
+ * Click event handler for links within the editor.
+ *
+ * Opens links in new tabs when the user Ctrl+clicks (or Cmd+clicks on Mac).
+ * Handles both file:// and http(s):// protocols.
+ *
+ * @param view - The ProseMirror editor view
+ * @param clickEvent - The mouse click event
+ * @returns true if the event was handled, false otherwise
+ */
+function handleLinkClick(view: EditorView, clickEvent: DOMEventMap["click"]): boolean {
+  const clickedElement = clickEvent.target;
+
+  if (!isAnchorElement(clickedElement)) {
+    return false;
+  }
+
+  if (!isLinkOpenTrigger(clickEvent)) {
+    return false;
+  }
+
+  // Get the tab opener from the plugin configuration
+  const pluginState = LINK_OPENER_PLUGIN_KEY.get(view.state);
+  const tabOpener = pluginState?.spec.tabOpener as TabOpener | undefined;
+
+  if (tabOpener === undefined) {
+    console.warn("Nekrasov: No tab opener configured for link handling");
+    return false;
+  }
+
+  // Parse and handle the URL
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(clickedElement.href);
+  } catch {
+    console.warn("Nekrasov: Invalid URL in link:", clickedElement.href);
+    return false;
+  }
+
+  // Route to appropriate handler based on protocol
+  if (parsedUrl.protocol === PROTOCOLS.FILE) {
+    handleFileProtocolLink(parsedUrl, tabOpener).catch((error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("Nekrasov: Failed to open file link:", errorMessage);
+    });
+  } else {
+    handleWebProtocolLink(parsedUrl, tabOpener);
+  }
+
+  clickEvent.preventDefault();
+  clickEvent.stopImmediatePropagation();
+  return true;
 }
 
 /**
  * Plugin state interface for the link click handler.
  */
-interface LinkPluginState {}
+interface LinkClickPluginState {}
 
 /**
  * Creates a ProseMirror plugin for handling link clicks.
  *
  * @param tabOpener - The tab opener implementation for opening links
- * @returns A ProseMirror plugin
+ * @returns A ProseMirror plugin configured for link click handling
  */
 export function getClickLinkPlugin(tabOpener: TabOpener): Plugin {
-  const linkDOMHandlers: EditorProps["handleDOMEvents"] = {
-    click: openNewTab,
+  const domEventHandlers: EditorProps["handleDOMEvents"] = {
+    click: handleLinkClick,
   };
 
-  const linkEditorNodeViews: EditorProps["nodeViews"] = {
+  const nodeViews: EditorProps["nodeViews"] = {
     link: getLinkView,
   };
 
-  const linkPluginEditorProps: EditorProps = {
-    handleDOMEvents: linkDOMHandlers,
-    nodeViews: linkEditorNodeViews,
+  const editorProps: EditorProps = {
+    handleDOMEvents: domEventHandlers,
+    nodeViews: nodeViews,
   };
 
-  const linkPluginConf: PluginSpec<LinkPluginState> = {
-    props: linkPluginEditorProps,
+  const pluginSpec: PluginSpec<LinkClickPluginState> = {
+    props: editorProps,
     tabOpener: tabOpener,
-    key: LINK_PLUGIN_KEY,
+    key: LINK_OPENER_PLUGIN_KEY,
   };
 
-  return new Plugin(linkPluginConf);
+  return new Plugin(pluginSpec);
 }
 
-export { getClickLinkPlugin as getRuzettLinkPlugin };
+export { getClickLinkPlugin as getNekrasovLinkPlugin };

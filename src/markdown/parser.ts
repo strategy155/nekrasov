@@ -1,6 +1,6 @@
 import MarkdownIt from "markdown-it";
 import type Token from "markdown-it/lib/token.mjs";
-import { ruzettSchema } from "../schema";
+import { nekrasovSchema } from "../schema";
 import {
   Mark,
   MarkType,
@@ -380,7 +380,7 @@ function getLinkAttrs(token: Token): Attrs {
   return linkAttrs;
 }
 
-const ruzettTokens: MarkdownParser["tokens"] = {
+const nekrasovTokens: MarkdownParser["tokens"] = {
   blockquote: { block: "blockquote" },
   paragraph: { block: "paragraph" },
   list_item: { block: "list_item" },
@@ -424,4 +424,4 @@ const ruzettTokens: MarkdownParser["tokens"] = {
   code_inline: { mark: "code", noCloseToken: true },
 };
 
-export { ruzettTokens };
+export { nekrasovTokens };

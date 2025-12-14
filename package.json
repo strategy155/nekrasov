@@ -1,10 +1,9 @@
 {
   "name": "nekrasov",
   "version": "1.0.0",
-  "description": "A modern, pluggable ProseMirror-based text editor",
+  "description": "A modern, pluggable ProseMirror-based text editor with Markdown support",
   "main": "dist/nekrasov.cjs.js",
   "module": "dist/nekrasov.esm.js",
-  "browser": "dist/nekrasov.umd.js",
   "types": "dist/index.d.ts",
   "author": "Mark <strategy155@gmail.com>",
   "license": "MIT",
@@ -14,9 +13,9 @@
   ],
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/nekrasov.esm.js",
-      "require": "./dist/nekrasov.cjs.js",
-      "browser": "./dist/nekrasov.umd.js"
+      "require": "./dist/nekrasov.cjs.js"
     },
     "./style.css": "./dist/style.css"
   },
@@ -37,12 +36,6 @@
     "prosemirror-transform": "^1.10.0",
     "prosemirror-view": "^1.41.0"
   },
-  "resolutions": {
-    "prosemirror-model": "^1.25.0",
-    "prosemirror-state": "^1.4.0",
-    "prosemirror-view": "^1.41.0",
-    "prosemirror-transform": "^1.10.0"
-  },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^25.0.7",
     "@rollup/plugin-node-resolve": "^15.2.3",
@@ -55,9 +48,25 @@
     "typescript": "^5.4.2"
   },
   "scripts": {
-    "build": "rollup -c",
-    "dev": "rollup -c -w",
-    "typecheck": "tsc --noEmit"
+    "build": "rollup --config rollup.config.js",
+    "build:watch": "rollup --config rollup.config.js --watch",
+    "typecheck": "tsc --noEmit --project tsconfig.json",
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean"
   },
-  "packageManager": "yarn@4.3.1"
+  "packageManager": "yarn@4.3.1",
+  "keywords": [
+    "editor",
+    "prosemirror",
+    "markdown",
+    "rich-text",
+    "wysiwyg"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/strategy155/nekrasov.git"
+  },
+  "bugs": {
+    "url": "https://github.com/strategy155/nekrasov/issues"
+  }
 }

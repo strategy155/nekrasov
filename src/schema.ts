@@ -33,7 +33,7 @@ const tableOptions: TableNodesOptions = {
 // getting the resulted node types
 const tableRelatedNodeTypes = tableNodes(tableOptions);
 
-const RUZETT_SCHEMA_CONFIG: SchemaSpec<USED_NODES, USED_MARKS> = {
+const NEKRASOV_SCHEMA_CONFIG: SchemaSpec<USED_NODES, USED_MARKS> = {
   nodes: {
     doc: {
       content: "block+",
@@ -252,5 +252,5 @@ const RUZETT_SCHEMA_CONFIG: SchemaSpec<USED_NODES, USED_MARKS> = {
   },
 };
 
-export const ruzettSchema = new Schema(RUZETT_SCHEMA_CONFIG);
-export { tableRelatedNodeTypes, RUZETT_SCHEMA_CONFIG };
+export const nekrasovSchema = new Schema(NEKRASOV_SCHEMA_CONFIG);
+export { tableRelatedNodeTypes, NEKRASOV_SCHEMA_CONFIG };

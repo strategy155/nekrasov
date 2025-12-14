@@ -1,3 +1,9 @@
+/**
+ * Nekrasov Editor - Plugin Configuration Module
+ *
+ * Creates and configures the ProseMirror plugins used by the editor.
+ */
+
 import { keymap } from "prosemirror-keymap";
 import { history } from "prosemirror-history";
 import { baseKeymap } from "prosemirror-commands";
@@ -20,53 +26,46 @@ export { buildMenuItems, buildKeymap, buildInputRules };
  * Plugin options for configuring the editor.
  */
 export interface PluginOptions {
-  /** The schema to generate key bindings and menu items for. */
+  /** The schema to generate key bindings and menu items for */
   schema: Schema;
 
   /** Tab opener for handling link clicks */
   tabOpener: TabOpener;
 
-  /** Can be used to adjust the key bindings created. */
+  /** Can be used to adjust the key bindings created */
   mapKeys?: { [key: string]: string | false };
 
-  /** Set to false to disable the menu bar. */
-  menuBar?: boolean;
+  /** Whether the menu bar is enabled (default: true) */
+  isMenuBarEnabled?: boolean;
 
-  /** Set to false to disable the history plugin. */
-  history?: boolean;
+  /** Whether the history plugin is enabled (default: true) */
+  isHistoryEnabled?: boolean;
 
-  /** Set to false to make the menu bar non-floating. */
-  floatingMenu?: boolean;
+  /** Whether the menu bar should float (default: true) */
+  isFloatingMenuEnabled?: boolean;
 
-  /** Can be used to override the menu content. */
+  /** Can be used to override the menu content */
   menuContent?: MenuItem[][];
 }
 
 /**
  * Creates an array of plugins pre-configured for the given schema.
- * The resulting array will include the following plugins:
  *
- *  - Input rules for smart quotes and creating the block types in the
- *    schema using markdown conventions (say `"> "` to create a blockquote)
- *
- *  - A keymap that defines keys to create and manipulate the nodes in the schema
- *
- *  - A keymap binding the default keys provided by the prosemirror-commands module
- *
- *  - The undo history plugin
- *
- *  - The drop cursor plugin
- *
- *  - The gap cursor plugin
- *
- *  - A menu bar with formatting options
- *
- *  - Table editing plugins
+ * Included plugins:
+ * - Input rules for smart quotes and markdown conventions
+ * - Keymap for editing commands
+ * - Base ProseMirror keymap
+ * - Undo/redo history
+ * - Drop cursor
+ * - Gap cursor
+ * - Menu bar with formatting options
+ * - Table editing
+ * - Link click handling
  *
  * @param options - Configuration options for the plugins
  * @returns Array of ProseMirror plugins
  */
-export function ruzettPlugins(options: PluginOptions): Plugin[] {
+export function nekrasovPlugins(options: PluginOptions): Plugin[] {
   const plugins: Plugin[] = [
     buildInputRules(options.schema),
     keymap(buildKeymap(options.schema, options.mapKeys)),
@@ -74,21 +73,20 @@ export function ruzettPlugins(options: PluginOptions): Plugin[] {
     dropCursor(),
     gapCursor(),
     getClickLinkPlugin(options.tabOpener),
-    // Table plugins
     columnResizing(),
     tableEditing(),
   ];
 
-  if (options.menuBar !== false) {
+  if (options.isMenuBarEnabled !== false) {
     plugins.push(
       menuBar({
-        floating: options.floatingMenu !== false,
+        floating: options.isFloatingMenuEnabled !== false,
         content: options.menuContent || buildMenuItems(options.schema).fullMenu,
       })
     );
   }
 
-  if (options.history !== false) {
+  if (options.isHistoryEnabled !== false) {
     plugins.push(history());
   }
 
