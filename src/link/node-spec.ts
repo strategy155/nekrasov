@@ -5,7 +5,7 @@ import {
   ParseRule,
   Node as ProsemirrorNode,
 } from "prosemirror-model";
-import { LINK_ATTRS, LINK_CSS_SELECTOR } from "../../constants";
+import { LINK_ATTRS, LINK_CSS_SELECTOR } from "../constants";
 
 const LINK_GROUP = "inline";
 

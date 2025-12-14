@@ -1,5 +1,5 @@
 import { Node, Mark, Schema , DOMSerializer } from "prosemirror-model";
-import { ruzettSchema, tableRelatedNodeTypes } from "../schema";
+import { nekrasovSchema, tableRelatedNodeTypes } from "../schema";
 
 const NEWLINE_SYMBOL = "\n";
 
@@ -116,7 +116,7 @@ function table(state: MarkdownSerializerState, tableNode: Node) {
   state.write();
 }
 
-const ruzettNodesSerializing: MarkdownSerializerState["nodes"] = {
+const nekrasovNodesSerializing: MarkdownSerializerState["nodes"] = {
   blockquote(state, node) {
     state.wrapBlock("> ", null, node, () => state.renderContent(node));
   },
@@ -186,7 +186,7 @@ const ruzettNodesSerializing: MarkdownSerializerState["nodes"] = {
   },
 };
 
-const ruzettMarksSerializing: MarkdownSerializerState["marks"] = {
+const nekrasovMarksSerializing: MarkdownSerializerState["marks"] = {
   em: { open: "*", close: "*", mixable: true, expelEnclosingWhitespace: true },
   strong: {
     open: "**",
@@ -219,7 +219,7 @@ const ruzettMarksSerializing: MarkdownSerializerState["marks"] = {
   },
 };
 
-export { ruzettNodesSerializing, ruzettMarksSerializing };
+export { nekrasovNodesSerializing, nekrasovMarksSerializing };
 
 function backticksFor(node: Node, side: number) {
   let ticks = /`+/g,

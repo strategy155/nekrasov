@@ -42,7 +42,7 @@ import {
   TOGGLE_HEADER_COLUMN_CMD_NAME,
   TOGGLE_HEADER_ROW_CMD_NAME,
   TOGGLE_HEADER_CELLS_CMD_NAME,
-} from "../../constants";
+} from "../constants";
 import {
   markItem,
   insertImageItem,
